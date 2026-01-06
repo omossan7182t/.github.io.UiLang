@@ -13,7 +13,7 @@ textarea {
   width: 100%;
   font-family: monospace;
 }
-#code { height: 240px; }
+#code { height: 260px; }
 #input { height: 60px; }
 pre {
   background: #111;
@@ -193,27 +193,22 @@ function reset() {
   document.getElementById("status").textContent = "";
 }
 
-document.getElementById("code").value =
-`ういこらしょ`.repeat(72) + `ういビーム
-` +
-`ういこらしょ`.repeat(29) + `ういビーム
-` +
-`ういこらしょ`.repeat(7) + `ういビーム
-ういビーム
-` +
-`ういこらしょ`.repeat(3) + `ういビーム
-` +
-`やんのか？`.repeat(79) + `ういビーム
-` +
-`ういこらしょ`.repeat(55) + `ういビーム
-` +
-`ういこらしょ`.repeat(3) + `ういビーム
-` +
-`やんのか？`.repeat(6) + `ういビーム
-` +
-`やんのか？`.repeat(76) + `ういビーム
-` +
-`ういこらしょ`.repeat(3) + `ういビーム`;
+/* === Hello World! 初期コード（確実版） === */
+const lines = [];
+lines.push("ういこらしょ".repeat(72) + "ういビーム"); // H
+lines.push("ういこらしょ".repeat(29) + "ういビーム"); // e
+lines.push("ういこらしょ".repeat(7)  + "ういビーム"); // l
+lines.push("ういビーム");                              // l
+lines.push("ういこらしょ".repeat(3)  + "ういビーム"); // o
+lines.push("やんのか？".repeat(79) + "ういビーム");   // space
+lines.push("ういこらしょ".repeat(55) + "ういビーム"); // W
+lines.push("ういこらしょ".repeat(3)  + "ういビーム"); // o
+lines.push("やんのか？".repeat(6)  + "ういビーム");   // r
+lines.push("やんのか？".repeat(8)  + "ういビーム");   // l
+lines.push("ういこらしょ".repeat(67) + "ういビーム"); // d
+lines.push("ういこらしょ".repeat(1)  + "ういビーム"); // !
+
+document.getElementById("code").value = lines.join("\n");
 </script>
 
 </body>
