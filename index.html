@@ -1,58 +1,82 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>UiLang 実行環境</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f7f7fb;
-      padding: 20px;
-    }
-    textarea {
-      width: 100%;
-      font-family: monospace;
-      box-sizing: border-box;
-    }
-    #code { height: 320px; }
-    #input { height: 80px; }
-    pre {
-      background: #111;
-      color: #0f0;
-      padding: 10px;
-      min-height: 120px;
-      white-space: pre-wrap;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>UiLang Debugger</title>
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  background: #f7f7fb;
+  padding: 20px;
+}
+textarea {
+  width: 100%;
+  font-family: monospace;
+}
+#code { height: 240px; }
+#input { height: 60px; }
+pre {
+  background: #111;
+  color: #0f0;
+  padding: 10px;
+  min-height: 80px;
+}
+button { margin-right: 8px; }
+
+#memory {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  margin-top: 10px;
+  padding: 6px;
+  background: #eee;
+}
+.cell {
+  min-width: 60px;
+  text-align: center;
+  font-size: 0.8rem;
+  border: 1px solid #aaa;
+  padding: 4px;
+  background: white;
+}
+.cell.active {
+  background: #ffdfdf;
+  border-color: #f00;
+}
+#status {
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+</style>
 </head>
 <body>
 
-<h1>🧠 UiLang 実行環境</h1>
+<h1>🧠 UiLang Debugger</h1>
 
 <h2>コード</h2>
-<textarea id="code" autocomplete="off"></textarea>
+<textarea id="code"></textarea>
 
-<h2>標準入力（リスナー募集）</h2>
-<textarea id="input" autocomplete="off" placeholder="※ 通常は使いません"></textarea>
+<h2>標準入力（通常未使用）</h2>
+<textarea id="input"></textarea>
 
-<button onclick="runUiLang()">実行</button>
+<button onclick="run()">▶ 実行</button>
+<button onclick="step()">⏸ ステップ</button>
+<button onclick="reset()">⏹ リセット</button>
+
+<label>
+  速度(ms):
+  <input id="speed" type="number" value="40" min="0">
+</label>
 
 <h2>出力</h2>
 <pre id="output"></pre>
 
-<script>
-const DEFAULT_CODE = `
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょ
-ういビーム
-`;
+<h2>メモリ</h2>
+<div id="memory"></div>
 
+<div id="status"></div>
+
+<script>
 const COMMANDS = [
   ["はい次〜", ">"],
   ["くぅ〜ん", "<"],
@@ -64,19 +88,24 @@ const COMMANDS = [
   ["負けないが？", "]"],
 ];
 
-window.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("code").value = DEFAULT_CODE.trim();
-  document.getElementById("input").value = "";
-});
+let prog = [];
+let pc = 0;
+let ptr = 0;
+let tape = [];
+let stack = [];
+let output = "";
+let timer = null;
+
+const TAPE_SIZE = 30;
 
 function tokenize(code) {
   const tokens = [];
   for (let i = 0; i < code.length;) {
     let matched = false;
-    for (const [w, c] of COMMANDS) {
-      if (code.startsWith(w, i)) {
-        tokens.push(c);
-        i += w.length;
+    for (const [word, sym] of COMMANDS) {
+      if (code.startsWith(word, i)) {
+        tokens.push(sym);
+        i += word.length;
         matched = true;
         break;
       }
@@ -86,40 +115,105 @@ function tokenize(code) {
   return tokens;
 }
 
-function runUiLang() {
-  const prog = tokenize(document.getElementById("code").value);
-  const tape = new Array(30000).fill(0);
-  let ptr = 0, pc = 0;
-  const stack = [];
-  let out = "";
-
-  while (pc < prog.length) {
-    switch (prog[pc]) {
-      case "+": tape[ptr]++; break;
-      case "-": tape[ptr] = Math.max(0, tape[ptr] - 1); break;
-      case ">": ptr++; break;
-      case "<": ptr = Math.max(0, ptr - 1); break;
-      case ".": out += String.fromCodePoint(tape[ptr]); break;
-      case "[":
-        if (tape[ptr] === 0) {
-          let d = 1;
-          while (d) {
-            pc++;
-            if (prog[pc] === "[") d++;
-            if (prog[pc] === "]") d--;
-          }
-        } else stack.push(pc);
-        break;
-      case "]":
-        if (tape[ptr] !== 0) pc = stack[stack.length - 1];
-        else stack.pop();
-        break;
-    }
-    pc++;
-  }
-
-  document.getElementById("output").textContent = out || "(出力なし)";
+function init() {
+  prog = tokenize(document.getElementById("code").value);
+  tape = new Array(TAPE_SIZE).fill(0);
+  pc = 0;
+  ptr = 0;
+  stack = [];
+  output = "";
+  updateUI();
 }
+
+function execStep() {
+  if (pc >= prog.length) return false;
+
+  switch (prog[pc]) {
+    case "+": tape[ptr]++; break;
+    case "-": tape[ptr] = Math.max(0, tape[ptr] - 1); break;
+    case ">": ptr = Math.min(TAPE_SIZE - 1, ptr + 1); break;
+    case "<": ptr = Math.max(0, ptr - 1); break;
+    case ".":
+      output += String.fromCodePoint(tape[ptr]);
+      break;
+    case "[":
+      if (tape[ptr] === 0) {
+        let depth = 1;
+        while (depth) {
+          pc++;
+          if (prog[pc] === "[") depth++;
+          if (prog[pc] === "]") depth--;
+        }
+      } else stack.push(pc);
+      break;
+    case "]":
+      if (tape[ptr] !== 0) pc = stack[stack.length - 1];
+      else stack.pop();
+      break;
+  }
+  pc++;
+  return true;
+}
+
+function updateUI() {
+  document.getElementById("output").textContent = output || "(出力なし)";
+  document.getElementById("status").textContent =
+    `PC=${pc} / 命令=${prog[pc] ?? "終了"} / PTR=${ptr} / 値=${tape[ptr]}`;
+
+  const mem = document.getElementById("memory");
+  mem.innerHTML = "";
+  tape.forEach((v, i) => {
+    const d = document.createElement("div");
+    d.className = "cell" + (i === ptr ? " active" : "");
+    d.textContent = i + "\n" + v;
+    mem.appendChild(d);
+  });
+}
+
+function step() {
+  if (!prog.length) init();
+  execStep();
+  updateUI();
+}
+
+function run() {
+  if (!prog.length) init();
+  const speed = Number(document.getElementById("speed").value);
+  timer = setInterval(() => {
+    if (!execStep()) clearInterval(timer);
+    updateUI();
+  }, speed);
+}
+
+function reset() {
+  clearInterval(timer);
+  prog = [];
+  document.getElementById("output").textContent = "";
+  document.getElementById("memory").innerHTML = "";
+  document.getElementById("status").textContent = "";
+}
+
+document.getElementById("code").value =
+`ういこらしょ`.repeat(72) + `ういビーム
+` +
+`ういこらしょ`.repeat(29) + `ういビーム
+` +
+`ういこらしょ`.repeat(7) + `ういビーム
+ういビーム
+` +
+`ういこらしょ`.repeat(3) + `ういビーム
+` +
+`やんのか？`.repeat(79) + `ういビーム
+` +
+`ういこらしょ`.repeat(55) + `ういビーム
+` +
+`ういこらしょ`.repeat(3) + `ういビーム
+` +
+`やんのか？`.repeat(6) + `ういビーム
+` +
+`やんのか？`.repeat(76) + `ういビーム
+` +
+`ういこらしょ`.repeat(3) + `ういビーム`;
 </script>
 
 </body>
