@@ -22,12 +22,17 @@ td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace }
 <div class="section">
   <h2>コード</h2>
   <textarea id="code">
-寝な！
+寝な！ 16歳だぞ
 ここで会ったが12375年目 ういビーム
 ここで会ったが12368年目 ういビーム
+ここで会ったが12428年目 ういビーム
+ここで会ったが12358年目 ういビーム
+ここで会ったが12356年目 ういビーム   
   </textarea>
 </div>
-
+<button onclick="runUiLang(false)">一括実行</button>
+<button onclick="runUiLang(true)">ステップ実行</button>
+<button onclick="clearOutput()">クリア</button>
 <div class="section">
   <h2>出力</h2>
   <pre id="output">(まだ出力なし)</pre>
@@ -39,11 +44,6 @@ td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace }
     <tr><th>#</th><th>値</th><th>文字</th></tr>
   </table>
 </div>
-
-<button onclick="runUiLang(false)">一括実行</button>
-<button onclick="runUiLang(true)">ステップ実行</button>
-<button onclick="clearOutput()">クリア</button>
-
 
 <script>
 function clearOutput() {
