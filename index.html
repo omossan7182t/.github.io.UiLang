@@ -4,27 +4,41 @@
   <meta charset="UTF-8" />
   <title>UiLang 実行環境</title>
   <style>
-    body { font-family: system-ui, sans-serif; background:#f7f7fb; padding:20px }
-    h1 { font-size:1.6rem }
-    textarea { width:100%; font-family: monospace; }
-    #code { height:220px; }
-    #input { height:80px; }
-    pre { background:#111; color:#0f0; padding:10px; min-height:120px }
-    button { padding:10px 16px; font-size:1rem }
-    .section { margin-bottom:20px }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f7f7fb;
+      padding: 20px;
+    }
+    h1 { font-size: 1.6rem; }
+    textarea {
+      width: 100%;
+      font-family: monospace;
+      margin-bottom: 10px;
+    }
+    #code { height: 240px; }
+    #input { height: 80px; }
+    pre {
+      background: #111;
+      color: #0f0;
+      padding: 12px;
+      min-height: 120px;
+      white-space: pre-wrap;
+    }
+    button {
+      padding: 10px 16px;
+      font-size: 1rem;
+    }
+    .section { margin-bottom: 20px; }
   </style>
 </head>
 <body>
+
 <h1>🧠 UiLang 実行環境</h1>
-<p>Brainf*ck互換・UTF-8対応 / 非公式ファンメイド言語</p>
+<p>Unicodeベース・Brainf*ck非互換のジョーク言語</p>
 
 <div class="section">
   <h2>コード</h2>
-  <textarea id="code">ういこらしょういこらしょういこらしょ
-は?
-  ういビーム
-  やんのか？
-負けないが？</textarea>
+  <textarea id="code"></textarea>
 </div>
 
 <div class="section">
@@ -53,10 +67,10 @@ function tokenize(code) {
   const tokens = [];
   for (let i = 0; i < code.length;) {
     let matched = false;
-    for (const [k, v] of COMMANDS) {
-      if (code.startsWith(k, i)) {
-        tokens.push(v);
-        i += k.length;
+    for (const [word, cmd] of COMMANDS) {
+      if (code.startsWith(word, i)) {
+        tokens.push(cmd);
+        i += word.length;
         matched = true;
         break;
       }
@@ -69,32 +83,41 @@ function tokenize(code) {
 function runUiLang() {
   const src = document.getElementById("code").value;
   const inputStr = document.getElementById("input").value;
-  let inputPtr = 0;
 
   const bf = tokenize(src);
   const tape = new Array(30000).fill(0);
   let ptr = 0;
   let pc = 0;
-  const stack = [];
+  let inputPtr = 0;
   let output = "";
+  const stack = [];
 
   while (pc < bf.length) {
     switch (bf[pc]) {
-      case "+": tape[ptr]++; break;
-      case "-": tape[ptr] = Math.max(0, tape[ptr] - 1); break;
-      case ">": ptr++; break;
-      case "<": ptr--; break;
-      case ".": output += String.fromCodePoint(tape[ptr]); break;
+      case "+":
+        tape[ptr]++;
+        break;
+      case "-":
+        tape[ptr] = Math.max(0, tape[ptr] - 1);
+        break;
+      case ">":
+        ptr++;
+        break;
+      case "<":
+        ptr--;
+        break;
+      case ".":
+        output += String.fromCodePoint(tape[ptr]);
+        break;
       case ",":
         if (inputPtr < inputStr.length) {
           const cp = inputStr.codePointAt(inputPtr);
           tape[ptr] = cp;
-          inputPtr += cp > 0xFFFF ? 2 : 1; // ★ ここが重要
+          inputPtr += cp > 0xFFFF ? 2 : 1;
         } else {
           tape[ptr] = 0;
         }
         break;
-
       case "[":
         if (tape[ptr] === 0) {
           let depth = 1;
@@ -103,18 +126,25 @@ function runUiLang() {
             if (bf[pc] === "[") depth++;
             if (bf[pc] === "]") depth--;
           }
-        } else stack.push(pc);
+        } else {
+          stack.push(pc);
+        }
         break;
       case "]":
-        if (tape[ptr] !== 0) pc = stack[stack.length - 1];
-        else stack.pop();
+        if (tape[ptr] !== 0) {
+          pc = stack[stack.length - 1];
+        } else {
+          stack.pop();
+        }
         break;
     }
     pc++;
   }
 
-  document.getElementById("output").textContent = output || "(出力なし)";
+  document.getElementById("output").textContent =
+    output || "(出力なし)";
 }
 </script>
+
 </body>
 </html>
