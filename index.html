@@ -77,8 +77,12 @@ function runUiLang(stepMode=false) {
       if (/^寝な！/.test(cmd)) tape[ptr] = 0;
       else if (/^16歳だぞ/.test(cmd)) tape[ptr] = 12354;
       else if (/^ここで会ったが(\d+)年目/.test(cmd)) {
-        const m = cmd.match(/^ここで会ったが(\d+)年目/);
-        tape[ptr] = parseInt(m[1]);
+        const match = cmd.match(/^ここで会ったが(\d+)年目/);
+        if (match) {
+          // 年目をそのまま tape に代入（UTF-32コードポイントとして扱える）
+          tape[ptr] = Number(match[1]);
+          console.log(`セル${ptr}に${tape[ptr]}を代入`);
+        }
       }
       else if (/^テトリス(\d+)：(\d+)位/.test(cmd)) {
         const m = cmd.match(/^テトリス(\d+)：(\d+)位/);
