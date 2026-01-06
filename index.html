@@ -57,43 +57,66 @@ function runUiLang() {
   const src = document.getElementById("code").value;
   const outputEl = document.getElementById("output");
   const tapeTable = document.getElementById("tapeTable");
-
   outputEl.textContent = '';
   tapeTable.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
 
-  tape = new Array(30000).fill(0);
-  ptr = 0;
-  let pc = 0;
-  const lines = src.split(/\r?\n/).map(l => l.trim()).filter(l=>l);
+  const tape = new Array(30000).fill(0);
+  let ptr = 0;
   let output = '';
 
-  while (pc < lines.length) {
-    let line = lines[pc];
+  const lines = src.split(/\r?\n/).map(l => l.trim()).filter(l=>l);
 
-    if (/^寝な！/.test(line)) tape[ptr] = 0;
-    else if (/^ここで会ったが(\d+)年目/.test(line)) {
-      const match = line.match(/^ここで会ったが(\d+)年目/);
-      tape[ptr] = parseInt(match[1]);
-    }
-    else if (/^16歳だぞ/.test(line)) tape[ptr] = 16;
-    else if (/^テトリス(\d+)：(\d+)位/.test(line)) {
-      const m = line.match(/^テトリス(\d+)：(\d+)位/);
-      const times = parseInt(m[1]), add = parseInt(m[2]);
-      tape[ptr] += times * add;
-    }
-    else if (/^きゃっきゃっ/.test(line)) tape[ptr]++;
-    else if (/^ういビーム/.test(line)) output += String.fromCodePoint(tape[ptr]);
-    else if (/^ういこらしょ/.test(line)) tape[ptr]++;
-    else if (/^やんのか？/.test(line)) tape[ptr] = Math.max(0, tape[ptr]-1);
-    else if (/^はい次〜/.test(line)) ptr++;
-    else if (/^くぅ〜ん/.test(line)) ptr--;
+  for (let line of lines) {
+    // 空白で分割して複数命令を処理
+    const tokens = line.split(/\s+/);
+    for (let token of tokens) {
+      // 明示ゼロ化
+      if (/^寝な！/.test(token)) tape[ptr] = 0;
 
-    updateTapeTable();
-    pc++;
+      // 絶対値ロード
+      else if (/^ここで会ったが(\d+)年目/.test(token)) {
+        tape[ptr] = parseInt(token.match(/^ここで会ったが(\d+)年目/)[1]);
+      }
+
+      // 基準点生成
+      else if (/^16歳だぞ/.test(token)) tape[ptr] = 16;
+
+      // 乗算ループ短縮
+      else if (/^テトリス(\d+)：(\d+)位/.test(token)) {
+        const m = token.match(/^テトリス(\d+)：(\d+)位/);
+        const times = parseInt(m[1]);
+        const add = parseInt(m[2]);
+        tape[ptr] += times * add;
+      }
+
+      // 高頻度差分
+      else if (/^きゃっきゃっ/.test(token)) tape[ptr]++;
+
+      // 出力
+      else if (/^ういビーム/.test(token)) output += String.fromCodePoint(tape[ptr]);
+
+      // 差分加算
+      else if (/^ういこらしょ/.test(token)) tape[ptr]++;
+      else if (/^やんのか？/.test(token)) tape[ptr] = Math.max(0, tape[ptr]-1);
+
+      // ポインタ移動
+      else if (/^はい次〜/.test(token)) ptr++;
+      else if (/^くぅ〜ん/.test(token)) ptr--;
+    }
   }
 
   outputEl.textContent = output || '(出力なし)';
+
+  // テーブル更新（先頭10セル）
+  for (let i = 0; i < 10; i++) {
+    const val = tape[i];
+    const ch = val > 0 ? String.fromCodePoint(val) : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i}</td><td>${val}</td><td>${ch}</td>`;
+    tapeTable.appendChild(tr);
+  }
 }
+
 
 // テーブル更新関数（ポインタの位置をハイライト）
 function updateTapeTable() {
