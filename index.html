@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>UiLang v1.1 実行環境（安定版）</title>
+<title>UiLang v1.1 実行環境</title>
 <style>
 body { font-family: system-ui, sans-serif; background:#f7f7fb; padding:20px }
 h1 { font-size:1.6rem }
@@ -12,20 +12,21 @@ textarea { width:100%; font-family: monospace; }
 pre { background:#111; color:#0f0; padding:10px; min-height:120px; overflow-x:auto }
 button { padding:10px 16px; font-size:1rem; margin-right:6px }
 .section { margin-bottom:20px }
-table { border-collapse: collapse; margin-top:10px; }
+table { border-collapse: collapse; margin-top:10px; width:100%; }
 td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace; text-align:center; }
 .pointer { background:#ff0; }
 </style>
 </head>
 <body>
 
-<h1>🧠 UiLang v1.1 実行環境（安定版）</h1>
-<p>Brainf*ck由来 / UTF-8対応 / 1行複数命令解釈 / 教育用表示</p>
+<h1>🧠 UiLang v1.1 実行環境</h1>
+<p>1行に複数命令も可 / ポインタ・Unicode表示付き</p>
 
 <div class="section">
   <h2>コード</h2>
   <textarea id="code">
-寝な！ 16歳だぞ ここで会ったが12375年目 ういビーム
+寝な！ 16歳だぞ
+ここで会ったが12375年目 ういビーム
 ここで会ったが12368年目 ういビーム
 ここで会ったが12428年目 ういビーム
 ここで会ったが12358年目 ういビーム
@@ -44,7 +45,7 @@ td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace; text-al
 <h2>出力</h2>
 <pre id="output"></pre>
 
-<h2>テープ状態（先頭10セル）</h2>
+<h2>テープ状態</h2>
 <table id="tapeTable">
 <tr><th>#</th><th>値</th><th>文字</th></tr>
 </table>
@@ -54,62 +55,61 @@ function runUiLang() {
   const src = document.getElementById("code").value;
   const outputEl = document.getElementById("output");
   const tapeTable = document.getElementById("tapeTable");
+
   outputEl.textContent = '';
   tapeTable.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
 
   const tape = new Array(30000).fill(0);
   let ptr = 0;
-  let output = '';
-
   const lines = src.split(/\r?\n/).map(l => l.trim()).filter(l=>l);
 
   const commandPatterns = [
-    { regex: /^寝な！/, action: () => tape[ptr] = 0 },
-    { regex: /^ここで会ったが(\d+)年目/, action: (m) => tape[ptr] = parseInt(m[1]) },
-    { regex: /^16歳だぞ/, action: () => tape[ptr] = 16 },
-    { regex: /^テトリス(\d+)：(\d+)位/, action: (m) => tape[ptr] += parseInt(m[1]) * parseInt(m[2]) },
+    { regex: /^寝な！/, action: () => tape[ptr]=0 },
+    { regex: /^ここで会ったが(\d+)年目/, action: m => tape[ptr]=parseInt(m[1]) },
+    { regex: /^16歳だぞ/, action: () => tape[ptr]=16 },
+    { regex: /^テトリス(\d+)：(\d+)位/, action: m => tape[ptr]+=parseInt(m[1])*parseInt(m[2]) },
     { regex: /^きゃっきゃっ/, action: () => tape[ptr]++ },
-    { regex: /^ういビーム/, action: () => output += String.fromCodePoint(tape[ptr]) },
+    { regex: /^ういビーム/, action: () => outputEl.textContent += String.fromCodePoint(tape[ptr]) },
     { regex: /^ういこらしょ/, action: () => tape[ptr]++ },
-    { regex: /^やんのか？/, action: () => tape[ptr] = Math.max(0, tape[ptr]-1) },
+    { regex: /^やんのか？/, action: () => tape[ptr]=Math.max(0,tape[ptr]-1) },
     { regex: /^はい次〜/, action: () => ptr++ },
     { regex: /^くぅ〜ん/, action: () => ptr-- },
   ];
 
   for (let line of lines) {
+    line = line.trim();
     while (line.length > 0) {
       let matched = false;
       for (let cmd of commandPatterns) {
         const m = line.match(cmd.regex);
-        if (m) {
+        if (m && m.index === 0) {
           cmd.action(m);
-          line = line.slice(m[0].length).trim(); // マッチした命令を削除
+          line = line.slice(m[0].length).trim();
           matched = true;
           break;
         }
       }
-      if (!matched) break; // どの命令にもマッチしなければ次の行へ
+      if (!matched) break; // どの命令にもマッチしなければ次の行
     }
   }
 
-  outputEl.textContent = output || '(出力なし)';
-
-  // テープ状態表示（先頭10セル）
+  // テーブル表示（先頭10セル）
   for (let i = 0; i < 10; i++) {
     const val = tape[i];
     const ch = val > 0 ? String.fromCodePoint(val) : '';
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td class="${i===ptr?'pointer':''}">${i}</td><td>${val}</td><td>${ch}</td>`;
+    tr.innerHTML = `<td${i===ptr?' class="pointer"':''}>${i}</td><td>${val}</td><td>${ch}</td>`;
     tapeTable.appendChild(tr);
   }
+
+  if(outputEl.textContent==='') outputEl.textContent='(出力なし)';
 }
 
 function clearUiLang() {
   document.getElementById("output").textContent = '';
-  const tapeTable = document.getElementById("tapeTable");
-  tapeTable.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
+  const table = document.getElementById("tapeTable");
+  table.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
 }
 </script>
-
 </body>
 </html>
