@@ -5,11 +5,10 @@
   <title>UiLang 実行環境</title>
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: system-ui, sans-serif;
       background: #f7f7fb;
       padding: 20px;
     }
-    h1 { font-size: 1.6rem; }
     textarea {
       width: 100%;
       font-family: monospace;
@@ -23,77 +22,18 @@
       padding: 10px;
       min-height: 120px;
       white-space: pre-wrap;
-      word-break: break-all;
     }
-    button {
-      padding: 10px 16px;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    .section { margin-bottom: 20px; }
   </style>
 </head>
 <body>
 
 <h1>🧠 UiLang 実行環境</h1>
-<p>
-  Brainf*ck 着想・非互換 / Unicode（UTF-8）対応<br>
-  非公式ファンメイド言語
-</p>
 
-<div class="section">
-  <h2>コード</h2>
-  <textarea id="code">
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょ
-ういビーム
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういビーム
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういビーム
-ういビーム
-ういこらしょういこらしょういこらしょ
-ういビーム
-はい次〜
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょ
-ういビーム
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういビーム
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
-ういこらしょういこらしょういこらしょういこらしょ
-ういビーム
-ういこらしょういこらしょういこらしょ
-ういビーム
-やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
-ういビーム
-やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
-ういビーム
-やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
-ういビーム
-  </textarea>
-</div>
+<h2>コード</h2>
+<textarea id="code" autocomplete="off"></textarea>
 
-<div class="section">
-  <h2>標準入力（リスナー募集）</h2>
-  <textarea id="input" placeholder="※ 通常は使いません"></textarea>
-</div>
+<h2>標準入力（リスナー募集）</h2>
+<textarea id="input" autocomplete="off" placeholder="※ 通常は使いません"></textarea>
 
 <button onclick="runUiLang()">実行</button>
 
@@ -101,6 +41,14 @@
 <pre id="output"></pre>
 
 <script>
+const DEFAULT_CODE = `
+ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
+ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
+ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
+ういこらしょういこらしょ
+ういビーム
+`;
+
 const COMMANDS = [
   ["はい次〜", ">"],
   ["くぅ〜ん", "<"],
@@ -112,14 +60,19 @@ const COMMANDS = [
   ["負けないが？", "]"],
 ];
 
+window.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("code").value = DEFAULT_CODE.trim();
+  document.getElementById("input").value = "";
+});
+
 function tokenize(code) {
   const tokens = [];
   for (let i = 0; i < code.length;) {
     let matched = false;
-    for (const [word, cmd] of COMMANDS) {
-      if (code.startsWith(word, i)) {
-        tokens.push(cmd);
-        i += word.length;
+    for (const [w, c] of COMMANDS) {
+      if (code.startsWith(w, i)) {
+        tokens.push(c);
+        i += w.length;
         matched = true;
         break;
       }
@@ -130,68 +83,38 @@ function tokenize(code) {
 }
 
 function runUiLang() {
-  const src = document.getElementById("code").value;
-  const inputStr = document.getElementById("input").value;
-  let inputPtr = 0;
-
-  const prog = tokenize(src);
+  const prog = tokenize(document.getElementById("code").value);
   const tape = new Array(30000).fill(0);
-  let ptr = 0;
-  let pc = 0;
-  const loopStack = [];
-  let output = "";
+  let ptr = 0, pc = 0;
+  const stack = [];
+  let out = "";
 
   while (pc < prog.length) {
     switch (prog[pc]) {
-      case "+":
-        tape[ptr]++;
-        break;
-      case "-":
-        tape[ptr] = Math.max(0, tape[ptr] - 1);
-        break;
-      case ">":
-        ptr++;
-        break;
-      case "<":
-        ptr = Math.max(0, ptr - 1);
-        break;
-      case ".":
-        output += String.fromCodePoint(tape[ptr]);
-        break;
-      case ",":
-        if (inputPtr < inputStr.length) {
-          const cp = inputStr.codePointAt(inputPtr);
-          tape[ptr] = cp;
-          inputPtr += cp > 0xFFFF ? 2 : 1;
-        } else {
-          tape[ptr] = 0;
-        }
-        break;
+      case "+": tape[ptr]++; break;
+      case "-": tape[ptr] = Math.max(0, tape[ptr] - 1); break;
+      case ">": ptr++; break;
+      case "<": ptr = Math.max(0, ptr - 1); break;
+      case ".": out += String.fromCodePoint(tape[ptr]); break;
       case "[":
         if (tape[ptr] === 0) {
-          let depth = 1;
-          while (depth > 0) {
+          let d = 1;
+          while (d) {
             pc++;
-            if (prog[pc] === "[") depth++;
-            if (prog[pc] === "]") depth--;
+            if (prog[pc] === "[") d++;
+            if (prog[pc] === "]") d--;
           }
-        } else {
-          loopStack.push(pc);
-        }
+        } else stack.push(pc);
         break;
       case "]":
-        if (tape[ptr] !== 0) {
-          pc = loopStack[loopStack.length - 1];
-        } else {
-          loopStack.pop();
-        }
+        if (tape[ptr] !== 0) pc = stack[stack.length - 1];
+        else stack.pop();
         break;
     }
     pc++;
   }
 
-  document.getElementById("output").textContent =
-    output || "(出力なし)";
+  document.getElementById("output").textContent = out || "(出力なし)";
 }
 </script>
 
