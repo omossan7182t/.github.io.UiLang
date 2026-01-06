@@ -108,33 +108,44 @@ document.getElementById("code").value = `
 let tape, ptr, pc, tokens, output, timer;
 
 function tokenize(src) {
-  const lines = src.split("\n");
   const result = [];
+  const lines = src.split("\n");
+
   for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
+    const parts = line.trim().split(/\s+/);
+    for (const part of parts) {
+      if (!part) continue;
 
-    if (LOAD_RE.test(trimmed)) {
-      result.push({ type: "LOAD", value: +trimmed.match(LOAD_RE)[1] });
-      continue;
-    }
-    if (TETRIS_RE.test(trimmed)) {
-      const [, a, b] = trimmed.match(TETRIS_RE);
-      result.push({ type: "MUL", a: +a, b: +b });
-      continue;
-    }
+      if (LOAD_RE.test(part)) {
+        result.push({
+          type: "LOAD",
+          value: +part.match(LOAD_RE)[1]
+        });
+        continue;
+      }
 
-    for (const [k, v] of COMMANDS) {
-      if (trimmed === k) result.push({ type: v });
-    }
+      if (TETRIS_RE.test(part)) {
+        const [, a, b] = part.match(TETRIS_RE);
+        result.push({ type: "MUL", a: +a, b: +b });
+        continue;
+      }
 
-    const repeat = trimmed.match(/(.+)×(\d+)/);
-    if (repeat) {
-      const cmd = repeat[1];
-      const n = +repeat[2];
-      for (let i = 0; i < n; i++) {
-        for (const [k, v] of COMMANDS) {
-          if (cmd === k) result.push({ type: v });
+      const repeat = part.match(/(.+)×(\d+)/);
+      if (repeat) {
+        const cmd = repeat[1];
+        const n = +repeat[2];
+        for (let i = 0; i < n; i++) {
+          for (const [k, v] of COMMANDS) {
+            if (cmd === k) result.push({ type: v });
+          }
+        }
+        continue;
+      }
+
+      for (const [k, v] of COMMANDS) {
+        if (part === k) {
+          result.push({ type: v });
+          break;
         }
       }
     }
