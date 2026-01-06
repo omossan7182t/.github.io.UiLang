@@ -94,24 +94,45 @@ document.getElementById("code").value = defaultCode;
 /* ========= 内部命令定義 ========= */
 function tokenize(src) {
   const tokens = [];
+
+  // v1.1 拡張命令（行単位）
   const lines = src.split(/\n/);
   for (const line of lines) {
-    if (/^はい次〜/.test(line)) tokens.push(">");
-    else if (/^くぅ〜ん/.test(line)) tokens.push("<");
-    else if (/^ういこらしょ/.test(line)) tokens.push("+");
-    else if (/^やんのか？/.test(line)) tokens.push("-");
-    else if (/^ういビーム/.test(line)) tokens.push(".");
-    else if (/^リスナー募集/.test(line)) tokens.push(",");
-    else if (/^は\?/.test(line)) tokens.push("[");
-    else if (/^負けないが？/.test(line)) tokens.push("]");
-    else if (/^寝な！/.test(line)) tokens.push("ZERO");
-    else {
-      const m = line.match(/^ここで会ったが(\d+)年目/);
-      if (m) tokens.push({type:"LOAD", value:parseInt(m[1],10)});
+    let handled = false;
+
+    const m = line.match(/^ここで会ったが(\d+)年目/);
+    if (m) {
+      tokens.push({type:"LOAD", value:parseInt(m[1],10)});
+      handled = true;
+    }
+    if (/^寝な！/.test(line)) {
+      tokens.push("ZERO");
+      handled = true;
+    }
+    if (handled) continue;
+
+    // v1.0 命令は「含まれる回数」をすべて数える
+    const table = [
+      ["ういこらしょ", "+"],
+      ["やんのか？", "-"],
+      ["はい次〜", ">"],
+      ["くぅ〜ん", "<"],
+      ["ういビーム", "."],
+      ["リスナー募集", ","],
+      ["は?", "["],
+      ["負けないが？", "]"],
+    ];
+
+    for (const [word, sym] of table) {
+      const count = line.split(word).length - 1;
+      for (let i = 0; i < count; i++) {
+        tokens.push(sym);
+      }
     }
   }
   return tokens;
 }
+
 
 /* ========= 実行エンジン ========= */
 function run(stepMode) {
