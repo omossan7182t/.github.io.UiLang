@@ -87,13 +87,14 @@ function runUiLang() {
       case ".": output += String.fromCodePoint(tape[ptr]); break;
       case ",":
         if (inputPtr < inputStr.length) {
-          output;
-          tape[ptr] = inputStr.codePointAt(inputPtr);
-          inputPtr++;
+          const cp = inputStr.codePointAt(inputPtr);
+          tape[ptr] = cp;
+          inputPtr += cp > 0xFFFF ? 2 : 1; // ★ ここが重要
         } else {
           tape[ptr] = 0;
         }
         break;
+
       case "[":
         if (tape[ptr] === 0) {
           let depth = 1;
