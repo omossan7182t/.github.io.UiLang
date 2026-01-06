@@ -102,7 +102,7 @@ function executeInstruction(cmd){
     const m = cmd.match(/^テトリス(\d+)：(\d+)位/);
     tape[ptr]+=parseInt(m[1])*parseInt(m[2]);
   }
-  else if(/^きゃっきゃっ/.test(cmd)) tape[ptr]++;
+  else if(/^きゃっきゃっ/.test(cmd)) tape[ptr]+=10;
   else if(/^ういビーム/.test(cmd)) output+=String.fromCodePoint(tape[ptr]);
   else if(/^ういこらしょ/.test(cmd)) tape[ptr]++;
   else if(/^やんのか？/.test(cmd)) tape[ptr]=Math.max(0,tape[ptr]-1);
