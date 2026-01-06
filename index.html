@@ -130,12 +130,17 @@ function execStep() {
 
   switch (prog[pc]) {
     case "+": tape[ptr]++; break;
-    case "-": tape[ptr] = Math.max(0, tape[ptr] - 1); break;
+    case "-": tape[ptr]--; break;
     case ">": ptr = Math.min(TAPE_SIZE - 1, ptr + 1); break;
     case "<": ptr = Math.max(0, ptr - 1); break;
     case ".":
-      output += String.fromCodePoint(tape[ptr]);
+      if (tape[ptr] < 0) {
+        output += "�";
+      } else {
+        output += String.fromCodePoint(tape[ptr]);
+      }
       break;
+
     case "[":
       if (tape[ptr] === 0) {
         let depth = 1;
