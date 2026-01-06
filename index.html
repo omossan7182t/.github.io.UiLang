@@ -5,7 +5,7 @@
   <title>UiLang 実行環境</title>
   <style>
     body {
-      font-family: system-ui, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       background: #f7f7fb;
       padding: 20px;
     }
@@ -13,20 +13,22 @@
     textarea {
       width: 100%;
       font-family: monospace;
-      margin-bottom: 10px;
+      box-sizing: border-box;
     }
-    #code { height: 240px; }
+    #code { height: 320px; }
     #input { height: 80px; }
     pre {
       background: #111;
       color: #0f0;
-      padding: 12px;
+      padding: 10px;
       min-height: 120px;
       white-space: pre-wrap;
+      word-break: break-all;
     }
     button {
       padding: 10px 16px;
       font-size: 1rem;
+      cursor: pointer;
     }
     .section { margin-bottom: 20px; }
   </style>
@@ -34,17 +36,15 @@
 <body>
 
 <h1>🧠 UiLang 実行環境</h1>
-<p>Unicodeベース・Brainf*ck非互換のジョーク言語</p>
+<p>
+  Brainf*ck 着想・非互換 / Unicode（UTF-8）対応<br>
+  非公式ファンメイド言語
+</p>
 
 <div class="section">
   <h2>コード</h2>
-  <textarea id="code"></textarea>
-</div>
-
-<div class="section">
-  <h2>標準入力（リスナー募集）</h2>
-  <textarea id="input" placeholder="ここに入力">
-    ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
+  <textarea id="code">
+ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
 ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
 ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
 ういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょういこらしょ
@@ -85,15 +85,14 @@
 ういビーム
 やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
 ういビーム
-やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
-やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
-やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
-やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
-やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
-やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
 やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？やんのか？
 ういビーム
   </textarea>
+</div>
+
+<div class="section">
+  <h2>標準入力（リスナー募集）</h2>
+  <textarea id="input" placeholder="※ 通常は使いません"></textarea>
 </div>
 
 <button onclick="runUiLang()">実行</button>
@@ -133,17 +132,17 @@ function tokenize(code) {
 function runUiLang() {
   const src = document.getElementById("code").value;
   const inputStr = document.getElementById("input").value;
+  let inputPtr = 0;
 
-  const bf = tokenize(src);
+  const prog = tokenize(src);
   const tape = new Array(30000).fill(0);
   let ptr = 0;
   let pc = 0;
-  let inputPtr = 0;
+  const loopStack = [];
   let output = "";
-  const stack = [];
 
-  while (pc < bf.length) {
-    switch (bf[pc]) {
+  while (pc < prog.length) {
+    switch (prog[pc]) {
       case "+":
         tape[ptr]++;
         break;
@@ -154,7 +153,7 @@ function runUiLang() {
         ptr++;
         break;
       case "<":
-        ptr--;
+        ptr = Math.max(0, ptr - 1);
         break;
       case ".":
         output += String.fromCodePoint(tape[ptr]);
@@ -171,20 +170,20 @@ function runUiLang() {
       case "[":
         if (tape[ptr] === 0) {
           let depth = 1;
-          while (depth) {
+          while (depth > 0) {
             pc++;
-            if (bf[pc] === "[") depth++;
-            if (bf[pc] === "]") depth--;
+            if (prog[pc] === "[") depth++;
+            if (prog[pc] === "]") depth--;
           }
         } else {
-          stack.push(pc);
+          loopStack.push(pc);
         }
         break;
       case "]":
         if (tape[ptr] !== 0) {
-          pc = stack[stack.length - 1];
+          pc = loopStack[loopStack.length - 1];
         } else {
-          stack.pop();
+          loopStack.pop();
         }
         break;
     }
