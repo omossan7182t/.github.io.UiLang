@@ -2,94 +2,124 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>UiLang 実行環境</title>
+<title>UiLang v1.1 実行環境</title>
 <style>
-  body { font-family: monospace; background:#f0f0f0; padding:10px; }
-  textarea { width:100%; height:200px; font-family: monospace; font-size:16px; }
-  #output { background:#fff; padding:10px; min-height:50px; white-space: pre-wrap; border:1px solid #ccc; margin-top:10px; }
-  #tape { margin-top:10px; white-space: pre; background:#fff; padding:10px; border:1px solid #ccc; }
-  .ptr { color:red; font-weight:bold; }
+body { font-family: system-ui, sans-serif; background:#f7f7fb; padding:20px }
+h1 { font-size:1.6rem }
+textarea { width:100%; font-family: monospace; }
+#code { height:220px; }
+#input { height:80px; }
+pre { background:#111; color:#0f0; padding:10px; min-height:120px; overflow-x:auto }
+button { padding:10px 16px; font-size:1rem }
+.section { margin-bottom:20px }
+table { border-collapse: collapse; margin-top:10px; }
+td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace }
 </style>
 </head>
 <body>
-<h1>UiLang 実行環境 (v1.1)</h1>
-<textarea id="code">
-ここで会ったが72年目 ういビーム
-ここで会ったが101年目 ういビーム
-ここで会ったが108年目 ういビーム
+
+<h1>🧠 UiLang v1.1 実行環境</h1>
+<p>Brainf*ck 由来・UTF-8対応 / v1.1 命令実装</p>
+
+<div class="section">
+  <h2>コード</h2>
+  <textarea id="code">
+寝な！
+ここで会ったが12375年目
 ういビーム
-ここで会ったが111年目 ういビーム
-ここで会ったが32年目 ういビーム
-ここで会ったが87年目 ういビーム
-ここで会ったが111年目 ういビーム
-ここで会ったが114年目 ういビーム
-ここで会ったが108年目 ういビーム
-ここで会ったが100年目 ういビーム
-ここで会ったが33年目 ういビーム
-</textarea>
-<button onclick="run()">実行</button>
-<div id="output"></div>
-<div id="tape"></div>
+寝な！
+16歳だぞ
+テトリス5：1230位
+きゃっきゃっ
+ういビーム
+  </textarea>
+</div>
+
+<div class="section">
+  <h2>標準入力</h2>
+  <textarea id="input" placeholder="基本使いません" id="input"></textarea>
+</div>
+
+<button onclick="runUiLang()">実行</button>
+
+<h2>出力</h2>
+<pre id="output"></pre>
+
+<h2>テープ状態</h2>
+<table id="tapeTable">
+<tr><th>#</th><th>値</th><th>文字</th></tr>
+</table>
 
 <script>
-const TAPE_SIZE = 30000;
-let tape = Array(TAPE_SIZE).fill(0);
-let ptr = 0;
+function runUiLang() {
+  const src = document.getElementById("code").value;
+  const outputEl = document.getElementById("output");
+  const tapeTable = document.getElementById("tapeTable");
+  outputEl.textContent = '';
+  tapeTable.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
 
-function tokenize(code){
-    const lines = code.split('\n').map(l=>l.trim()).filter(l=>l!=='');
-    const tokens = [];
-    for(const line of lines){
-        // LOAD命令
-        const loadMatch = line.match(/ここで会ったが(\d+)年目/);
-        if(loadMatch){
-            tokens.push({type:"LOAD", value:parseInt(loadMatch[1],10)});
-            const rest = line.replace(loadMatch[0],'').trim();
-            if(rest){
-                const subTokens = tokenize(rest);
-                tokens.push(...subTokens);
-            }
-            continue;
-        }
-        // "+" 命令
-        const plusCount = (line.match(/ういこらしょ/g)||[]).length;
-        for(let i=0;i<plusCount;i++) tokens.push("+");
-        // "-" 命令
-        const minusCount = (line.match(/やんのか？/g)||[]).length;
-        for(let i=0;i<minusCount;i++) tokens.push("-");
-        // 出力
-        if(line.includes("ういビーム")) tokens.push(".");
-        // ポインタ移動
-        if(line.includes("くぅ〜ん")) tokens.push("<");
-        if(line.includes("はい次〜")) tokens.push(">");
-        // ゼロ化
-        if(line.includes("寝な！")) tokens.push({type:"ZERO"});
+  const tape = new Array(30000).fill(0);
+  let ptr = 0;
+  let pc = 0;
+  const stack = [];
+  let output = '';
+
+  const lines = src.split(/\r?\n/).map(l => l.trim()).filter(l=>l);
+
+  while (pc < lines.length) {
+    let line = lines[pc];
+
+    // 明示ゼロ化
+    if (/^寝な！/.test(line)) {
+      tape[ptr] = 0;
     }
-    return tokens;
-}
-
-function run(){
-    tape.fill(0);
-    ptr = 0;
-    const code = document.getElementById("code").value;
-    const tokens = tokenize(code);
-    let output = "";
-    for(const tok of tokens){
-        if(tok==="+" ) tape[ptr]++;
-        else if(tok==="-") tape[ptr] = Math.max(0, tape[ptr]-1);
-        else if(tok===".") output += String.fromCodePoint(tape[ptr]);
-        else if(tok==="<") ptr = Math.max(0, ptr-1);
-        else if(tok===">") ptr = Math.min(TAPE_SIZE-1, ptr+1);
-        else if(tok.type==="ZERO") tape[ptr]=0;
-        else if(tok.type==="LOAD") tape[ptr] = tok.value;
+    // 絶対値ロード
+    else if (/^ここで会ったが(\d+)年目/.test(line)) {
+      const match = line.match(/^ここで会ったが(\d+)年目/);
+      tape[ptr] = parseInt(match[1]);
     }
-    document.getElementById("output").textContent = output;
-    renderTape();
-}
+    // 基準点生成
+    else if (/^16歳だぞ/.test(line)) {
+      tape[ptr] = 16;
+    }
+    // 乗算ループ短縮
+    else if (/^テトリス(\d+)：(\d+)位/.test(line)) {
+      const m = line.match(/^テトリス(\d+)：(\d+)位/);
+      const times = parseInt(m[1]);
+      const add = parseInt(m[2]);
+      tape[ptr] += times * add;
+    }
+    // 高頻度差分
+    else if (/^きゃっきゃっ/.test(line)) {
+      tape[ptr]++;
+    }
+    // 出力
+    else if (/^ういビーム/.test(line)) {
+      output += String.fromCodePoint(tape[ptr]);
+    }
+    // 差分加算
+    else if (/^ういこらしょ/.test(line)) {
+      tape[ptr]++;
+    }
+    else if (/^やんのか？/.test(line)) {
+      tape[ptr] = Math.max(0, tape[ptr]-1);
+    }
+    // ポインタ移動
+    else if (/^はい次〜/.test(line)) ptr++;
+    else if (/^くぅ〜ん/.test(line)) ptr--;
+    pc++;
+  }
 
-function renderTape(){
-    const view = tape.slice(0,50).map((v,i)=> i===ptr ? `[${v}]` : v).join(" ");
-    document.getElementById("tape").textContent = view;
+  outputEl.textContent = output || '(出力なし)';
+
+  // テーブル更新
+  for (let i = 0; i < 10; i++) {
+    const val = tape[i];
+    const ch = val > 0 ? String.fromCodePoint(val) : '';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i}</td><td>${val}</td><td>${ch}</td>`;
+    tapeTable.appendChild(tr);
+  }
 }
 </script>
 </body>
