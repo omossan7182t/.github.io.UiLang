@@ -2,219 +2,209 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>UiLang</title>
+<title>UiLang v1.1 実行環境</title>
 <style>
 body {
   font-family: system-ui, sans-serif;
-  background: #f7f7fb;
+  background: #f6f7fb;
   padding: 20px;
 }
+h1 { font-size: 1.6rem; }
 textarea {
   width: 100%;
   font-family: monospace;
 }
 #code { height: 260px; }
 #input { height: 60px; }
+button { padding: 6px 12px; margin-right: 6px; }
 pre {
   background: #111;
   color: #0f0;
   padding: 10px;
-  min-height: 80px;
+  min-height: 100px;
 }
-button { margin-right: 8px; }
-
-#memory {
-  display: flex;
-  gap: 4px;
-  overflow-x: auto;
+table {
+  border-collapse: collapse;
   margin-top: 10px;
-  padding: 6px;
-  background: #eee;
 }
-.cell {
-  min-width: 60px;
-  text-align: center;
-  font-size: 0.8rem;
+td, th {
   border: 1px solid #aaa;
-  padding: 4px;
-  background: white;
+  padding: 4px 8px;
+  text-align: center;
 }
-.cell.active {
-  background: #ffdfdf;
-  border-color: #f00;
+.current {
+  background: #ffe08a;
 }
-#status {
-  margin-top: 10px;
-  font-size: 0.9rem;
-}
+small { color: #555; }
 </style>
 </head>
-<body>
 
-<h1>UiLang v1.0</h1>
+<body>
+<h1>UiLang v1.1 実行環境</h1>
+<p>Unicode 可視化・教育用ステップ実行対応</p>
 
 <h2>コード</h2>
 <textarea id="code"></textarea>
 
-<h2>標準入力（通常未使用）</h2>
+<h2>標準入力（通常は未使用）</h2>
 <textarea id="input"></textarea>
 
+<div>
 <button onclick="run()">▶ 実行</button>
-<button onclick="step()">⏸ ステップ</button>
-<button onclick="reset()">⏹ リセット</button>
-
-<label>
-  速度(ms):
-  <input id="speed" type="number" value="1" min="0">
-</label>
+<button onclick="step()">⏭ ステップ</button>
+<button onclick="stop()">⏸ 停止</button>
+速度 <input type="range" min="10" max="500" value="100" id="speed">
+</div>
 
 <h2>出力</h2>
 <pre id="output"></pre>
 
-<h2>メモリ</h2>
+<h2>現在セルの状態</h2>
+<div id="cellinfo"></div>
+
+<h2>メモリ（先頭16セル）</h2>
 <div id="memory"></div>
 
-<div id="status"></div>
-
 <script>
+/* ===== UiLang v1.1 命令定義 ===== */
 const COMMANDS = [
-  ["はい次〜", ">"],
-  ["くぅ〜ん", "<"],
-  ["ういこらしょ", "+"],
-  ["やんのか？", "-"],
-  ["ういビーム", "."],
-  ["リスナー募集", ","],
-  ["は?", "["],
-  ["負けないが？", "]"],
+  ["はい次〜", "PTR_INC"],
+  ["くぅ〜ん", "PTR_DEC"],
+  ["ういこらしょ", "INC"],
+  ["やんのか？", "DEC"],
+  ["ういビーム", "OUT"],
+  ["リスナー募集", "IN"],
+  ["は?", "LOOP_START"],
+  ["負けないが？", "LOOP_END"],
+  ["寝な！", "ZERO"],
+  ["16歳だぞ", "BASE16"],
+  ["きゃっきゃっ", "INC5"],
 ];
 
-let prog = [];
-let pc = 0;
-let ptr = 0;
-let tape = [];
-let stack = [];
-let output = "";
-let timer = null;
+/* 即値ロード */
+const LOAD_RE = /ここで会ったが(\d+)年目/;
+/* 乗算短縮 */
+const TETRIS_RE = /テトリス(\d+)：(\d+)位/;
 
-const TAPE_SIZE = 30;
+/* ===== 初期 Hello World! ===== */
+document.getElementById("code").value = `
+寝な！
+ここで会ったが72年目
+ういビーム
+ういこらしょ×29
+ういビーム
+ういこらしょ×7
+ういビーム
+ういビーム
+ういこらしょ×3
+ういビーム
+やんのか？×79
+ういビーム
+ういこらしょ×55
+ういビーム
+`.trim();
 
-function tokenize(code) {
-  const tokens = [];
-  for (let i = 0; i < code.length;) {
-    let matched = false;
-    for (const [word, sym] of COMMANDS) {
-      if (code.startsWith(word, i)) {
-        tokens.push(sym);
-        i += word.length;
-        matched = true;
-        break;
+/* ===== 実行エンジン ===== */
+let tape, ptr, pc, tokens, output, timer;
+
+function tokenize(src) {
+  const lines = src.split("\n");
+  const result = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (LOAD_RE.test(trimmed)) {
+      result.push({ type: "LOAD", value: +trimmed.match(LOAD_RE)[1] });
+      continue;
+    }
+    if (TETRIS_RE.test(trimmed)) {
+      const [, a, b] = trimmed.match(TETRIS_RE);
+      result.push({ type: "MUL", a: +a, b: +b });
+      continue;
+    }
+
+    for (const [k, v] of COMMANDS) {
+      if (trimmed === k) result.push({ type: v });
+    }
+
+    const repeat = trimmed.match(/(.+)×(\d+)/);
+    if (repeat) {
+      const cmd = repeat[1];
+      const n = +repeat[2];
+      for (let i = 0; i < n; i++) {
+        for (const [k, v] of COMMANDS) {
+          if (cmd === k) result.push({ type: v });
+        }
       }
     }
-    if (!matched) i++;
   }
-  return tokens;
-}
-
-function init() {
-  prog = tokenize(document.getElementById("code").value);
-  tape = new Array(TAPE_SIZE).fill(0);
-  pc = 0;
-  ptr = 0;
-  stack = [];
-  output = "";
-  updateUI();
-}
-
-function execStep() {
-  if (pc >= prog.length) return false;
-
-  switch (prog[pc]) {
-    case "+": tape[ptr]++; break;
-    case "-": tape[ptr]--; break;
-    case ">": ptr = Math.min(TAPE_SIZE - 1, ptr + 1); break;
-    case "<": ptr = Math.max(0, ptr - 1); break;
-    case ".":
-      if (tape[ptr] < 0) {
-        output += "�";
-      } else {
-        output += String.fromCodePoint(tape[ptr]);
-      }
-      break;
-
-    case "[":
-      if (tape[ptr] === 0) {
-        let depth = 1;
-        while (depth) {
-          pc++;
-          if (prog[pc] === "[") depth++;
-          if (prog[pc] === "]") depth--;
-        }
-      } else stack.push(pc);
-      break;
-    case "]":
-      if (tape[ptr] !== 0) pc = stack[stack.length - 1];
-      else stack.pop();
-      break;
-  }
-  pc++;
-  return true;
-}
-
-function updateUI() {
-  document.getElementById("output").textContent = output || "(出力なし)";
-  document.getElementById("status").textContent =
-    `PC=${pc} / 命令=${prog[pc] ?? "終了"} / PTR=${ptr} / 値=${tape[ptr]}`;
-
-  const mem = document.getElementById("memory");
-  mem.innerHTML = "";
-  tape.forEach((v, i) => {
-    const d = document.createElement("div");
-    d.className = "cell" + (i === ptr ? " active" : "");
-    d.textContent = i + "\n" + v;
-    mem.appendChild(d);
-  });
-}
-
-function step() {
-  if (!prog.length) init();
-  execStep();
-  updateUI();
-}
-
-function run() {
-  if (!prog.length) init();
-  const speed = Number(document.getElementById("speed").value);
-  timer = setInterval(() => {
-    if (!execStep()) clearInterval(timer);
-    updateUI();
-  }, speed);
+  return result;
 }
 
 function reset() {
-  clearInterval(timer);
-  prog = [];
-  document.getElementById("output").textContent = "";
-  document.getElementById("memory").innerHTML = "";
-  document.getElementById("status").textContent = "";
+  tape = new Array(30000).fill(0);
+  ptr = 0;
+  pc = 0;
+  output = "";
+  tokens = tokenize(document.getElementById("code").value);
+  updateUI();
 }
 
-/* === Hello World! 初期コード（確実版） === */
-const lines = [];
-lines.push("ういこらしょ".repeat(72) + "ういビーム"); // H
-lines.push("ういこらしょ".repeat(29) + "ういビーム"); // e
-lines.push("ういこらしょ".repeat(7)  + "ういビーム"); // l
-lines.push("ういビーム");                              // l
-lines.push("ういこらしょ".repeat(3)  + "ういビーム"); // o
-lines.push("やんのか？".repeat(79) + "ういビーム");   // space
-lines.push("ういこらしょ".repeat(55) + "ういビーム"); // W
-lines.push("ういこらしょ".repeat(24)  + "ういビーム"); // o
-lines.push("ういこらしょ".repeat(3)  + "ういビーム");   // r
-lines.push("やんのか？".repeat(6)  + "ういビーム");   // l
-lines.push("やんのか？".repeat(8) + "ういビーム"); // d
-lines.push("やんのか？".repeat(67)  + "ういビーム"); // !
+function executeStep() {
+  if (pc >= tokens.length) return stop();
 
-document.getElementById("code").value = lines.join("\n");
+  const t = tokens[pc];
+  switch (t.type) {
+    case "INC": tape[ptr]++; break;
+    case "INC5": tape[ptr] += 5; break;
+    case "DEC": tape[ptr] = Math.max(0, tape[ptr] - 1); break;
+    case "PTR_INC": ptr++; break;
+    case "PTR_DEC": ptr--; break;
+    case "ZERO": tape[ptr] = 0; break;
+    case "BASE16": tape[ptr] = 16; break;
+    case "LOAD": tape[ptr] = t.value; break;
+    case "MUL": tape[ptr] += t.a * t.b; break;
+    case "OUT":
+      output += String.fromCodePoint(tape[ptr]);
+      document.getElementById("output").textContent = output;
+      break;
+  }
+  pc++;
+  updateUI();
+}
+
+function updateUI() {
+  const cp = tape[ptr];
+  const char = cp < 32 ? "␀" : String.fromCodePoint(cp);
+  document.getElementById("cellinfo").innerHTML =
+    `値: ${cp} / 0x${cp.toString(16)} / 文字: ${char}`;
+
+  let html = "<table><tr>";
+  for (let i = 0; i < 16; i++) {
+    html += `<th class="${i===ptr?"current":""}">${i}</th>`;
+  }
+  html += "</tr><tr>";
+  for (let i = 0; i < 16; i++) {
+    html += `<td class="${i===ptr?"current":""}">${tape[i]}</td>`;
+  }
+  html += "</tr></table>";
+  document.getElementById("memory").innerHTML = html;
+}
+
+function run() {
+  reset();
+  timer = setInterval(executeStep, document.getElementById("speed").value);
+}
+
+function step() {
+  if (!tokens) reset();
+  executeStep();
+}
+
+function stop() {
+  clearInterval(timer);
+}
 </script>
-
 </body>
 </html>
