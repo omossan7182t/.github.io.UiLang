@@ -60,71 +60,7 @@ let pc = 0;
 let commands = [];
 let output = '';
 
+// 命令を正規表現で抽出する
 function parseCommands() {
   const src = document.getElementById("code").value;
-  const commandRegex = /(寝な！|16歳だぞ|ここで会ったが\d+年目|テトリス\d+：\d+位|きゃっきゃっ|ういこらしょ|やんのか？|はい次〜|くぅ〜ん|ういビーム)/g;
-  commands = [];
-  let match;
-  while ((match = commandRegex.exec(src)) !== null) {
-    commands.push(match[0]);
-  }
-}
-
-function updateTapeTable() {
-  const tapeTable = document.getElementById("tapeTable");
-  tapeTable.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
-  for (let i = 0; i < 10; i++) {
-    const val = tape[i];
-    const ch = val > 0 ? String.fromCodePoint(val) : '';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${i}</td><td>${val}</td><td>${ch}</td>`;
-    tapeTable.appendChild(tr);
-  }
-}
-
-function stepExecute() {
-  if (commands.length === 0) parseCommands();
-  if (pc >= commands.length) return alert('実行終了');
-
-  const cmd = commands[pc];
-
-  if (/^寝な！/.test(cmd)) tape[ptr] = 0;
-  else if (/^16歳だぞ/.test(cmd)) tape[ptr] = 12354;
-  else if (/^ここで会ったが(\d+)年目/.test(cmd)) {
-    tape[ptr] = parseInt(cmd.match(/^ここで会ったが(\d+)年目/)[1]);
-  }
-  else if (/^テトリス(\d+)：(\d+)位/.test(cmd)) {
-    const m = cmd.match(/^テトリス(\d+)：(\d+)位/);
-    tape[ptr] += parseInt(m[1]) * parseInt(m[2]);
-  }
-  else if (/^きゃっきゃっ/.test(cmd)) tape[ptr] += 10;
-  else if (/^ういこらしょ/.test(cmd)) tape[ptr]++;
-  else if (/^やんのか？/.test(cmd)) tape[ptr] = Math.max(0, tape[ptr]-1);
-  else if (/^はい次〜/.test(cmd)) ptr++;
-  else if (/^くぅ〜ん/.test(cmd)) ptr--;
-  else if (/^ういビーム/.test(cmd)) output += String.fromCodePoint(tape[ptr]);
-
-  document.getElementById("output").textContent = output || '(まだ出力なし)';
-  updateTapeTable();
-  pc++;
-}
-
-function runAll() {
-  parseCommands();
-  while (pc < commands.length) stepExecute();
-}
-
-function resetMachine() {
-  tape.fill(0);
-  ptr = 0;
-  pc = 0;
-  output = '';
-  commands = [];
-  document.getElementById("output").textContent = '(まだ出力なし)';
-  updateTapeTable();
-}
-updateTapeTable();
-</script>
-
-</body>
-</html>
+  const commandRegex = /(寝な！|16歳だぞ|ここで
