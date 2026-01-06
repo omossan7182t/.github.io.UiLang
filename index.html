@@ -9,11 +9,12 @@ h1 { font-size:1.6rem }
 textarea { width:100%; font-family: monospace; }
 #code { height:220px; }
 #input { height:80px; }
-pre { background:#111; color:#0f0; padding:10px; min-height:120px; overflow-x:auto }
-button { padding:10px 16px; font-size:1rem }
+pre { background:#111; color:#0f0; padding:10px; min-height:120px; overflow-x:auto; white-space:pre-wrap; word-break:break-word; }
+button { padding:10px 16px; font-size:1rem; margin-right:10px }
 .section { margin-bottom:20px }
-table { border-collapse: collapse; margin-top:10px; }
-td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace }
+table { border-collapse: collapse; margin-top:10px; width:100%; }
+td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace; text-align:center; }
+.pointer { background: #ff0; }
 </style>
 </head>
 <body>
@@ -25,11 +26,8 @@ td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace }
   <h2>コード</h2>
   <textarea id="code">
 寝な！
-ここで会ったが12375年目
-ういビーム
-寝な！
 16歳だぞ
-テトリス5：1230位
+テトリス5：72位
 きゃっきゃっ
 ういビーム
   </textarea>
@@ -37,89 +35,89 @@ td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace }
 
 <div class="section">
   <h2>標準入力</h2>
-  <textarea id="input" placeholder="基本使いません" id="input"></textarea>
+  <textarea id="input" placeholder="基本使いません"></textarea>
 </div>
 
 <button onclick="runUiLang()">実行</button>
+<button onclick="clearUiLang()">クリア</button>
 
 <h2>出力</h2>
 <pre id="output"></pre>
 
-<h2>テープ状態</h2>
+<h2>テープ状態（最初の10セル）</h2>
 <table id="tapeTable">
 <tr><th>#</th><th>値</th><th>文字</th></tr>
 </table>
 
 <script>
+let tape = new Array(30000).fill(0);
+let ptr = 0;
+
 function runUiLang() {
   const src = document.getElementById("code").value;
   const outputEl = document.getElementById("output");
   const tapeTable = document.getElementById("tapeTable");
+
   outputEl.textContent = '';
   tapeTable.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
 
-  const tape = new Array(30000).fill(0);
-  let ptr = 0;
+  tape = new Array(30000).fill(0);
+  ptr = 0;
   let pc = 0;
-  const stack = [];
-  let output = '';
-
   const lines = src.split(/\r?\n/).map(l => l.trim()).filter(l=>l);
+  let output = '';
 
   while (pc < lines.length) {
     let line = lines[pc];
 
-    // 明示ゼロ化
-    if (/^寝な！/.test(line)) {
-      tape[ptr] = 0;
-    }
-    // 絶対値ロード
+    if (/^寝な！/.test(line)) tape[ptr] = 0;
     else if (/^ここで会ったが(\d+)年目/.test(line)) {
       const match = line.match(/^ここで会ったが(\d+)年目/);
       tape[ptr] = parseInt(match[1]);
     }
-    // 基準点生成
-    else if (/^16歳だぞ/.test(line)) {
-      tape[ptr] = 16;
-    }
-    // 乗算ループ短縮
+    else if (/^16歳だぞ/.test(line)) tape[ptr] = 16;
     else if (/^テトリス(\d+)：(\d+)位/.test(line)) {
       const m = line.match(/^テトリス(\d+)：(\d+)位/);
-      const times = parseInt(m[1]);
-      const add = parseInt(m[2]);
+      const times = parseInt(m[1]), add = parseInt(m[2]);
       tape[ptr] += times * add;
     }
-    // 高頻度差分
-    else if (/^きゃっきゃっ/.test(line)) {
-      tape[ptr]++;
-    }
-    // 出力
-    else if (/^ういビーム/.test(line)) {
-      output += String.fromCodePoint(tape[ptr]);
-    }
-    // 差分加算
-    else if (/^ういこらしょ/.test(line)) {
-      tape[ptr]++;
-    }
-    else if (/^やんのか？/.test(line)) {
-      tape[ptr] = Math.max(0, tape[ptr]-1);
-    }
-    // ポインタ移動
+    else if (/^きゃっきゃっ/.test(line)) tape[ptr]++;
+    else if (/^ういビーム/.test(line)) output += String.fromCodePoint(tape[ptr]);
+    else if (/^ういこらしょ/.test(line)) tape[ptr]++;
+    else if (/^やんのか？/.test(line)) tape[ptr] = Math.max(0, tape[ptr]-1);
     else if (/^はい次〜/.test(line)) ptr++;
     else if (/^くぅ〜ん/.test(line)) ptr--;
+
+    updateTapeTable();
     pc++;
   }
 
   outputEl.textContent = output || '(出力なし)';
+}
 
-  // テーブル更新
+// テーブル更新関数（ポインタの位置をハイライト）
+function updateTapeTable() {
+  const tapeTable = document.getElementById("tapeTable");
+  tapeTable.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
   for (let i = 0; i < 10; i++) {
     const val = tape[i];
     const ch = val > 0 ? String.fromCodePoint(val) : '';
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${i}</td><td>${val}</td><td>${ch}</td>`;
+    if (i === ptr) tr.classList.add('pointer');
     tapeTable.appendChild(tr);
   }
+}
+
+// クリアボタン
+function clearUiLang() {
+  document.getElementById('code').value = '';
+  document.getElementById('input').value = '';
+  document.getElementById('output').textContent = '';
+  tape = new Array(30000).fill(0);
+  ptr = 0;
+  const tapeTable = document.getElementById("tapeTable");
+  tapeTable.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
 }
 </script>
 </body>
