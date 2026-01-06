@@ -78,7 +78,7 @@ function executeLine(line) {
     // 絶対値ロード
     else if (/^ここで会ったが(\d+)年目/.test(part)) tape[ptr] = parseInt(part.match(/^ここで会ったが(\d+)年目/)[1]);
     // 基準点
-    else if (/^16歳だぞ/.test(part)) tape[ptr] = 16;
+    else if (/^16歳だぞ/.test(part)) tape[ptr] = 12354;
     // 乗算ループ短縮
     else if (/^テトリス(\d+)：(\d+)位/.test(part)) {
       const m = part.match(/^テトリス(\d+)：(\d+)位/);
