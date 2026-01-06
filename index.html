@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>UiLang v1.1 ステップ実行環境</title>
+<title>UiLang v1.1 デバッグ版</title>
 <style>
 body { font-family: system-ui, sans-serif; background:#f7f7fb; padding:20px }
 h1 { font-size:1.6rem }
@@ -10,57 +10,113 @@ textarea { width:100%; font-family: monospace; }
 #code { height:220px; }
 #input { height:80px; }
 pre { background:#111; color:#0f0; padding:10px; min-height:120px; overflow-x:auto }
-button { padding:8px 12px; font-size:1rem; margin-right:5px }
-.section { margin-bottom:20px }
+button { padding:10px 16px; font-size:1rem; margin-right:10px }
 table { border-collapse: collapse; margin-top:10px; }
-td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace; text-align:center }
+td, th { border:1px solid #ccc; padding:4px 8px; font-family: monospace }
 </style>
 </head>
 <body>
 
-<h1>🧠 UiLang v1.1 ステップ実行環境</h1>
-<p>Brainf*ck 由来・UTF-8対応 / v1.1 命令実装</p>
+<h1>🧠 UiLang v1.1 デバッグ版</h1>
 
 <div class="section">
   <h2>コード</h2>
   <textarea id="code">
 寝な！
-16歳だぞ
 ここで会ったが12375年目 ういビーム
 ここで会ったが12368年目 ういビーム
-ここで会ったが12428年目 ういビーム
-ここで会ったが12358年目 ういビーム
-ここで会ったが12356年目 ういビーム
   </textarea>
 </div>
 
 <div class="section">
-  <h2>標準入力</h2>
-  <textarea id="input" placeholder="基本使いません"></textarea>
+  <h2>出力</h2>
+  <pre id="output">(まだ出力なし)</pre>
 </div>
 
 <div class="section">
-  <button onclick="stepExecute()">ステップ実行</button>
-  <button onclick="runAll()">一括実行</button>
-  <button onclick="resetMachine()">クリア</button>
+  <h2>テープ状態</h2>
+  <table id="tapeTable">
+    <tr><th>#</th><th>値</th><th>文字</th></tr>
+  </table>
 </div>
 
-<h2>出力</h2>
-<pre id="output">(まだ出力なし)</pre>
-
-<h2>テープ状態</h2>
-<table id="tapeTable">
-<tr><th>#</th><th>値</th><th>文字</th></tr>
-</table>
+<button onclick="runUiLang(false)">一括実行</button>
+<button onclick="runUiLang(true)">ステップ実行</button>
+<button onclick="clearOutput()">クリア</button>
 
 <script>
-let tape = new Array(30000).fill(0);
-let ptr = 0;
-let pc = 0;
-let commands = [];
-let output = '';
+function clearOutput() {
+  document.getElementById("output").textContent = '(まだ出力なし)';
+  const table = document.getElementById("tapeTable");
+  table.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
+}
 
-// 命令を正規表現で抽出する
-function parseCommands() {
+function runUiLang(stepMode=false) {
   const src = document.getElementById("code").value;
-  const commandRegex = /(寝な！|16歳だぞ|ここで
+  const outputEl = document.getElementById("output");
+  const tapeTable = document.getElementById("tapeTable");
+
+  let tape = new Array(30000).fill(0);
+  let ptr = 0;
+  let output = '';
+
+  const lines = src.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+
+  let pc = 0;
+
+  function processLine(line, lineNo) {
+    // 行内の命令をすべて抽出
+    const commands = line.match(/寝な！|16歳だぞ|テトリス\d+：\d+位|きゃっきゃっ|ういこらしょ|やんのか？|ういビーム|はい次〜|くぅ〜ん|ここで会ったが\d+年目|負けないが？/g);
+    if (!commands) return;
+
+    for (let cmd of commands) {
+      if (/^寝な！/.test(cmd)) tape[ptr] = 0;
+      else if (/^16歳だぞ/.test(cmd)) tape[ptr] = 12354;
+      else if (/^ここで会ったが(\d+)年目/.test(cmd)) {
+        const m = cmd.match(/^ここで会ったが(\d+)年目/);
+        tape[ptr] = parseInt(m[1]);
+      }
+      else if (/^テトリス(\d+)：(\d+)位/.test(cmd)) {
+        const m = cmd.match(/^テトリス(\d+)：(\d+)位/);
+        tape[ptr] += parseInt(m[1]) * parseInt(m[2]);
+      }
+      else if (/^きゃっきゃっ/.test(cmd)) tape[ptr] += 10;
+      else if (/^ういこらしょ/.test(cmd)) tape[ptr]++;
+      else if (/^やんのか？/.test(cmd)) tape[ptr] = Math.max(0, tape[ptr]-1);
+      else if (/^ういビーム/.test(cmd)) output += String.fromCodePoint(tape[ptr]);
+      else if (/^はい次〜/.test(cmd)) ptr++;
+      else if (/^くぅ〜ん/.test(cmd)) ptr--;
+      else if (/^負けないが？/.test(cmd)) { /* ループ開始/終了用の仮 */ }
+
+      console.log(`Line ${lineNo}, cmd: ${cmd}, ptr: ${ptr}, cell: ${tape[ptr]}, char: ${tape[ptr]>0?String.fromCodePoint(tape[ptr]):''}`);
+    }
+  }
+
+  function updateTable() {
+    tapeTable.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
+    for (let i=0;i<10;i++){
+      const val = tape[i];
+      const ch = val>0?String.fromCodePoint(val):'';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i}</td><td>${val}</td><td>${ch}</td>`;
+      tapeTable.appendChild(tr);
+    }
+  }
+
+  if (stepMode) {
+    // ステップ実行
+    if (pc >= lines.length) return;
+    processLine(lines[pc], pc+1);
+    pc++;
+    outputEl.textContent = output || '(まだ出力なし)';
+    updateTable();
+  } else {
+    // 一括実行
+    for (pc=0; pc<lines.length; pc++) processLine(lines[pc], pc+1);
+    outputEl.textContent = output || '(まだ出力なし)';
+    updateTable();
+  }
+}
+</script>
+</body>
+</html>
