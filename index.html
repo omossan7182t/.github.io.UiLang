@@ -94,7 +94,7 @@ function executeInstruction(cmd){
     const m = cmd.match(/^ここで会ったが(\d+)年目/);
     tape[ptr]=parseInt(m[1]);
   }
-  else if(/^16歳だぞ/.test(cmd)) tape[ptr]=16;
+  else if(/^16歳だぞ/.test(cmd)) tape[ptr]=12354;
   else if(/^テトリス(\d+)：(\d+)位/.test(cmd)){
     const m = cmd.match(/^テトリス(\d+)：(\d+)位/);
     tape[ptr]+=parseInt(m[1])*parseInt(m[2]);
