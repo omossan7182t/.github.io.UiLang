@@ -25,13 +25,9 @@ td.ptr { background:#eef; }
 <div class="section">
   <h2>コード</h2>
   <textarea id="code">
-寝な！
-16歳だぞ
-ここで会ったが12352年目 ういビーム
+寝な！ 16歳だぞ ここで会ったが12352年目 ういビーム
 ここで会ったが12356年目 ういビーム
-ここで会ったが12363年目 ういビーム
-ここで会ったが12358年目 ういビーム
-ここで会ったが12356年目 ういビーム
+ここで会ったが12363年目 ういビーム ここで会ったが12358年目 ういビーム
   </textarea>
 </div>
 
@@ -41,7 +37,7 @@ td.ptr { background:#eef; }
 </div>
 
 <button onclick="resetUiLang()">リセット</button>
-<button onclick="stepUiLang()">1ステップ実行</button>
+<button onclick="stepUiLang()">1命令ステップ実行</button>
 <button onclick="runUiLang()">通常実行</button>
 
 <h2>出力</h2>
@@ -57,12 +53,16 @@ let tape = new Array(30000).fill(0);
 let ptr = 0;
 let pc = 0;
 let output = '';
-let lines = [];
-let running = false;
+let instructions = []; // 命令単位の配列
 
-function parseLines() {
+function parseCode() {
   const src = document.getElementById("code").value;
-  lines = src.split(/\r?\n/).map(l => l.trim()).filter(l=>l);
+  instructions = [];
+  src.split(/\r?\n/).forEach(line => {
+    line.trim().split(/\s+/).filter(c=>c).forEach(cmd=>{
+      instructions.push(cmd);
+    });
+  });
 }
 
 function resetUiLang() {
@@ -70,15 +70,14 @@ function resetUiLang() {
   ptr = 0;
   pc = 0;
   output = '';
-  parseLines();
-  document.getElementById("output").textContent = '';
+  parseCode();
   updateTapeTable();
 }
 
 function updateTapeTable() {
   const tapeTable = document.getElementById("tapeTable");
   tapeTable.innerHTML = '<tr><th>#</th><th>値</th><th>文字</th></tr>';
-  for (let i=0;i<10;i++){
+  for(let i=0;i<10;i++){
     const val = tape[i];
     const ch = val>0 ? String.fromCodePoint(val) : '';
     const tr = document.createElement('tr');
@@ -89,47 +88,41 @@ function updateTapeTable() {
   document.getElementById("output").textContent = output || '(出力なし)';
 }
 
-function executeCommand(line) {
-  // 複数命令を同一行に処理
-  const commands = line.split(/\s+/).filter(c=>c);
-
-  for(const cmd of commands){
-    if(/^寝な！/.test(cmd)) tape[ptr]=0;
-    else if(/^ここで会ったが(\d+)年目/.test(cmd)) {
-      const m = cmd.match(/^ここで会ったが(\d+)年目/);
-      tape[ptr]=parseInt(m[1]);
-    }
-    else if(/^16歳だぞ/.test(cmd)) tape[ptr]=16;
-    else if(/^テトリス(\d+)：(\d+)位/.test(cmd)) {
-      const m = cmd.match(/^テトリス(\d+)：(\d+)位/);
-      tape[ptr]+=parseInt(m[1])*parseInt(m[2]);
-    }
-    else if(/^きゃっきゃっ/.test(cmd)) tape[ptr]++;
-    else if(/^ういビーム/.test(cmd)) output+=String.fromCodePoint(tape[ptr]);
-    else if(/^ういこらしょ/.test(cmd)) tape[ptr]++;
-    else if(/^やんのか？/.test(cmd)) tape[ptr]=Math.max(0,tape[ptr]-1);
-    else if(/^はい次〜/.test(cmd)) ptr++;
-    else if(/^くぅ〜ん/.test(cmd)) ptr--;
+function executeInstruction(cmd){
+  if(/^寝な！/.test(cmd)) tape[ptr]=0;
+  else if(/^ここで会ったが(\d+)年目/.test(cmd)){
+    const m = cmd.match(/^ここで会ったが(\d+)年目/);
+    tape[ptr]=parseInt(m[1]);
   }
+  else if(/^16歳だぞ/.test(cmd)) tape[ptr]=16;
+  else if(/^テトリス(\d+)：(\d+)位/.test(cmd)){
+    const m = cmd.match(/^テトリス(\d+)：(\d+)位/);
+    tape[ptr]+=parseInt(m[1])*parseInt(m[2]);
+  }
+  else if(/^きゃっきゃっ/.test(cmd)) tape[ptr]++;
+  else if(/^ういビーム/.test(cmd)) output+=String.fromCodePoint(tape[ptr]);
+  else if(/^ういこらしょ/.test(cmd)) tape[ptr]++;
+  else if(/^やんのか？/.test(cmd)) tape[ptr]=Math.max(0,tape[ptr]-1);
+  else if(/^はい次〜/.test(cmd)) ptr++;
+  else if(/^くぅ〜ん/.test(cmd)) ptr--;
 }
 
-function stepUiLang(){
-  if(pc>=lines.length) return;
-  executeCommand(lines[pc]);
+function stepUiLang() {
+  if(pc>=instructions.length) return;
+  executeInstruction(instructions[pc]);
   pc++;
   updateTapeTable();
 }
 
-function runUiLang(){
+function runUiLang() {
   resetUiLang();
-  while(pc<lines.length){
-    executeCommand(lines[pc]);
+  while(pc<instructions.length){
+    executeInstruction(instructions[pc]);
     pc++;
   }
   updateTapeTable();
 }
 
-// 初期化
 resetUiLang();
 </script>
 </body>
