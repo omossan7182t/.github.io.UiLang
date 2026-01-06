@@ -72,25 +72,32 @@ function tokenize(code) {
   const lines = code.split('\n').map(l=>l.trim()).filter(l=>l!=='');
   const tokens = [];
   for(const line of lines){
-    if(line.startsWith("ここで会ったが")) {
-      const m = line.match(/ここで会ったが(\d+)年目/);
-      if(m) tokens.push({type:"LOAD", value:parseInt(m[1],10)});
-    } else if(line.startsWith("ういこらしょ")) {
-      const count = (line.match(/ういこらしょ/g)||[]).length;
-      for(let i=0;i<count;i++) tokens.push("+");
-    } else if(line.startsWith("やんのか？")) {
-      const count = (line.match(/やんのか？/g)||[]).length;
-      for(let i=0;i<count;i++) tokens.push("-");
-    } else if(line==="ういビーム") tokens.push(".");
-    else if(line==="くぅ〜ん") tokens.push("<");
-    else if(line==="はい次〜") tokens.push(">");
-    else if(line==="寝な！") tokens.push({type:"ZERO"});
-    else {
-      // コメントは無視
+    // 行内で LOAD とその他命令を分割
+    const loadMatch = line.match(/ここで会ったが(\d+)年目/);
+    if(loadMatch){
+      tokens.push({type:"LOAD", value:parseInt(loadMatch[1],10)});
+      // LOAD の後に命令が続く場合をチェック
+      const rest = line.replace(loadMatch[0],'').trim();
+      if(rest){
+        const subTokens = tokenize(rest); // 再帰で分割
+        tokens.push(...subTokens);
+      }
+      continue;
     }
+    // "+" 命令
+    const plusCount = (line.match(/ういこらしょ/g)||[]).length;
+    for(let i=0;i<plusCount;i++) tokens.push("+");
+    // "-" 命令
+    const minusCount = (line.match(/やんのか？/g)||[]).length;
+    for(let i=0;i<minusCount;i++) tokens.push("-");
+    if(line.includes("ういビーム")) tokens.push(".");
+    if(line.includes("くぅ〜ん")) tokens.push("<");
+    if(line.includes("はい次〜")) tokens.push(">");
+    if(line.includes("寝な！")) tokens.push({type:"ZERO"});
   }
   return tokens;
 }
+
 
 function run(){
   const code = document.getElementById("code").value;
